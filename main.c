@@ -93,36 +93,35 @@ int main(void)
 
   ssd1306_display( data );
 
-  _delay_ms( 1000 );
+  _delay_ms( 100 );
 
+    PORTE.DIR=0;
     // wejścia enkodera
-    PORTCFG.MPCMASK    =    0b00000011;                       // wybór pinów 0 i 1 do konfiguracji
-    PORTE.PIN0CTRL     =    PORT_ISC_LEVEL_gc |               // reagowanie na poziom niski
-                            PORT_OPC_PULLUP_gc;               // podciągnięcie do zasilania
+    //PORTCFG.MPCMASK    =    0b00000011;                       // wybór pinów 0 i 1 do konfiguracji
+    PORTE.PIN0CTRL     =    PORT_ISC_LEVEL_gc;// |               // reagowanie na poziom niski
+                            //PORT_OPC_PULLUP_gc;               // podciągnięcie do zasilania
     PORTE.PIN1CTRL     =    PORT_ISC_LEVEL_gc |               // reagowanie na poziom niski
-                            PORT_OPC_PULLUP_gc;               // podciągnięcie do zasilania
+        PORT_INVEN_bm;
+                            //PORT_OPC_PULLUP_gc;               // podciągnięcie do zasilania
 
     // konfiguracja systemu zdarzeń
     EVSYS.CH0MUX       =    EVSYS_CHMUX_PORTE_PIN0_gc;        // pin C0 wywołuje zdarzenie
-    EVSYS.CH0CTRL      =    EVSYS_QDEN_bm; //|                    // włączenie dekodera w systemie zdarzeń
-                            //EVSYS_DIGFILT_8SAMPLES_gc;        // filtr cyfrowy
+    EVSYS.CH0CTRL      =    EVSYS_QDEN_bm |                    // włączenie dekodera w systemie zdarzeń
+                            EVSYS_DIGFILT_2SAMPLES_gc;        // filtr cyfrowy
+
+   // EVSYS.CH0CTRL      =
+   //     EVSYS_QDIRM_gm |  /* Quadrature Decoder Index Recognition Mode group mask. */
+   //     EVSYS_QDIEN_bm ; /* Quadrature Decoder Index Enable bit mask. */
 
     // konfiguracja timera
-    TCE0.CTRLA         =    TC_CLKSEL_EVCH0_gc;               // taktowanie systemem zdarzeń
+    //TCE0.CTRLA         =    TC_CLKSEL_EVCH0_gc;               // taktowanie systemem zdarzeń
     TCE0.CTRLD         =    TC_EVACT_QDEC_gc |                // włączenie dekodera kwadraturowego
                             TC_EVSEL_CH0_gc;                  // dekoder zlicza impulsy z kanału 0
+    TCE0.PER = 7;
+  TCE0.CTRLA = TC_CLKSEL_DIV1_gc;
 
+    //sysclk_enable_module(SYSCLK_PORT_E, SYSCLK_TC0);
 
-    for(int i = 1; 1; ++i)  {
-        ssd1306_set_column_address(0);
-        ssd1306_set_page_address(0);
-        ssd1306_write_text("val: ");
-        ssd1306_write_num( TCE0.CNT );
-        ssd1306_write_text(" -> ok ");
-        ssd1306_write_num( i );
-        ssd1306_write_text(" -> ");
-        ssd1306_write_num( TCC0.CNT );
-    }
 
 
 
@@ -157,6 +156,16 @@ int main(void)
   TCC0.CTRLA = (TCC0.CTRLA & ~TC0_CLKSEL_gm) | TC_CLKSEL_DIV1_gc;
   TCC0.CTRLB = TC_WGMODE_SS_gc | TC0_CCAEN_bm;
 
+    for(int i = 1; 1; ++i)  {
+        ssd1306_set_column_address(0);
+        ssd1306_set_page_address(0);
+        ssd1306_write_text("val: ");
+        ssd1306_write_num( TCE0.CNT+i );
+        ssd1306_write_text(" -> ok ");
+        ssd1306_write_num( i );
+        ssd1306_write_text(" -> ");
+        ssd1306_write_num( TCC0.CNT );
+    }
   while (1) { };
 }
 
